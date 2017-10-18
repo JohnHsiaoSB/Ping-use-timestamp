@@ -39,7 +39,7 @@ void usage (void)
 }
 
 
-/*°e¥Xicmp timestamp requestªº¨ç¦¡, ¨Ã·|±N¬ÛÃöªíÀYªº¸ê°T³]©wµ¹icmp«Ê¥]*/
+/*é€å‡ºicmp timestamp requestçš„å‡½å¼, ä¸¦æœƒå°‡ç›¸é—œè¡¨é ­çš„è³‡è¨Šè¨­å®šçµ¦icmpå°åŒ…*/
 void send_timestamp_request()
 {
 	struct timeval tval;
@@ -51,41 +51,40 @@ void send_timestamp_request()
 	
 	icmp_h = (struct icmp*) usendbuf;
 		
-	/************¶ñ¤Jicmp¬ÛÃöªº«Ê¥]ªíÀY¸ê°T**************/
+	/************å¡«å…¥icmpç›¸é—œçš„å°åŒ…è¡¨é ­è³‡è¨Š**************/
 	icmp_h->icmp_type=ICMP_TIMESTAMP;
 	icmp_h->icmp_code=0;
 	icmp_h->icmp_cksum=0;
 	icmp_h->icmp_id =pid;
 	icmp_h->icmp_seq=++nSent;
 	int j=0;	
- 
-  /*±Nicmp «Ê¥]ªºªø«×³]¬°20:ªíÀY8bytes,3­Ótimestamp¬°12bytes¦X­p20­Óbytes*/
+ 	/*å°‡icmp å°åŒ…çš„é•·åº¦è¨­ç‚º20:è¡¨é ­8bytes,3å€‹timestampç‚º12bytesåˆè¨ˆ20å€‹bytes*/
 	icmp_size = 8+12;
 
-  /*­pºâ°e¥X«Ê¥]ªº®É¶¡¨Ã±N¥L¶Ç¹Doriginal timeªºÄæ¦ì¸Ì­±*/
+	/*è¨ˆç®—é€å‡ºå°åŒ…çš„æ™‚é–“ä¸¦å°‡ä»–å‚³é“original timeçš„æ¬„ä½è£¡é¢*/
 	gettimeofday (&tval, NULL);
 	v = htonl ((tval.tv_sec % 86400) * 1000 + tval.tv_usec / 1000);
 	
 	icmp_h->icmp_otime=v;
-  icmp_h->icmp_rtime=0;
+	icmp_h->icmp_rtime=0;
 	icmp_h->icmp_ttime=0;
 	
-	/*­pºâicmp«Ê¥]ªºcksum*/
+	/*è¨ˆç®—icmpå°åŒ…çš„cksum*/
 	icmp_h->icmp_cksum=in_cksum((u_int16_t*)icmp_h, icmp_size, 0);
 	
 	pp = (u_int16_t*)usendbuf;
 	
-	/*¦L¥Xicmp «Ê¥]timestampªº¸ê°T*/
+	/*å°å‡ºicmp å°åŒ…timestampçš„è³‡è¨Š*/
 	dump_icmp_timestamp_info (*icmp_h);
 	
-	/*°e¥Xicmpªº«Ê¥]*/
+	/*é€å‡ºicmpçš„å°åŒ…*/
  	sret = sendto (icmp_sock, usendbuf, BUFSIZE, 0, (struct sockaddr*)&go_addr, sizeof (struct sockaddr_in));
  	if (sret <= 0)
  		fprintf(stderr,"sock send data fail!!\n");
  	//printf("sret:%d\n", sret);
 }
 
-/*********************************­pºâcksumªº¨ç¦¡*******************************************/
+/*********************************è¨ˆç®—cksumçš„å‡½å¼*******************************************/
 /*******************************************************************************************/
 u_int16_t in_cksum(const u_int16_t *addr, register int len, u_int16_t csum)
 {
@@ -121,7 +120,7 @@ void dump_icmp_timestamp_info (struct icmp icmp_p)
 	
 }
 
-/********************************************³B²z¦¬¨ìªºicmp«Ê¥]*****************************/
+/********************************************è™•ç†æ”¶åˆ°çš„icmpå°åŒ…*****************************/
 
 void unpack_packet (u_char* pbuffer)
 {
@@ -132,10 +131,10 @@ void unpack_packet (u_char* pbuffer)
 	
 	iph = (struct ip*)rsendbuf;
 	
-	/*­pºâip headerªºªø«×*/
+	/*è¨ˆç®—ip headerçš„é•·åº¦*/
 	iphlen = iph->ip_hl << 2;
 	
-	/*¨ú±oicmpªº¤º®e*/
+	/*å–å¾—icmpçš„å…§å®¹*/
 	icmp_h = (struct icmp*)(rsendbuf+iphlen);
 	printf("response icmp type:%d\n",icmp_h->icmp_type );
 	switch (icmp_h->icmp_type)
@@ -146,12 +145,12 @@ void unpack_packet (u_char* pbuffer)
 			{
 				printf("------------------------------------------------\n");			
 				
-				/*¦L¥Xicmp «Ê¥]timestampªº¸ê°T*/
+				/*å°å‡ºicmp å°åŒ…timestampçš„è³‡è¨Š*/
 				dump_icmp_timestamp_info (*icmp_h);
 				
 				printf("back time:%lu\n", arrive_time);
 				
-				/*­pºârtt©Ò»İªº®É¶¡*/
+				/*è¨ˆç®—rttæ‰€éœ€çš„æ™‚é–“*/
 				rtt = (arrive_time - ntohl(icmp_h->icmp_ttime)) + (ntohl(icmp_h->icmp_rtime) - ntohl(icmp_h->icmp_otime));				
 				printf("RTT:%lu\n", rtt);
 				printf("------------------------------------------------\n");
@@ -180,7 +179,7 @@ int main (int argc, char** argv)
 	struct timeval tval;
 	int size=50*1024;
 	
-	/*±Nusendbuf,rsendbufªì©l¸ê®Æ*/   
+	/*å°‡usendbuf,rsendbufåˆå§‹è³‡æ–™*/   
 	memset(usendbuf, 0, sizeof(usendbuf));
 	memset(rsendbuf, 0, sizeof(rsendbuf));
 	
@@ -199,7 +198,7 @@ int main (int argc, char** argv)
 	go_addr.sin_family = AF_INET;
 	addrlen = sizeof(from);
 	
-	/****************¹ïdomain name§@³B²z³B²z¥B¨ú±o¬Û¹ïÀ³ªºip¦ì¸m****************/
+	/****************å°domain nameä½œè™•ç†è™•ç†ä¸”å–å¾—ç›¸å°æ‡‰çš„ipä½ç½®****************/
 	if (inet_aton (target, &go_addr.sin_addr) == 1)
 	{
 		hostname = target;
@@ -207,7 +206,7 @@ int main (int argc, char** argv)
 	}
 	else
 	{
-		/*¨Ï¥Îgethostbyname¨ç¦¡¨ú±odomain name¬Û¹ïÀ³ªºip address*/
+		/*ä½¿ç”¨gethostbynameå‡½å¼å–å¾—domain nameç›¸å°æ‡‰çš„ip address*/
 		hp = gethostbyname2(target, AF_INET);
 		if (!hp)
 		{
@@ -219,43 +218,39 @@ int main (int argc, char** argv)
 								
 		hostname = strdup (hp->h_name);									
 		
-		/*±Nip address½Æ»s¶igo_addr.sin_addrªº¸ê®Æµ²ºc¸Ì*/
+		/*å°‡ip addressè¤‡è£½é€²go_addr.sin_addrçš„è³‡æ–™çµæ§‹è£¡*/
 		memcpy (&go_addr.sin_addr, hp->h_addr, 4);						
 	}
 	/*******************************************************************/	
 	
-	
-	
-	
-  icmp_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+	icmp_sock = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 
 	if (icmp_sock < 0)
 	{
 		perror ("create raw socket fail!!\n");
 		exit (1);
 	}
-  setsockopt(icmp_sock,SOL_SOCKET,SO_RCVBUF,&size,sizeof(size) );
+	setsockopt(icmp_sock,SOL_SOCKET,SO_RCVBUF,&size,sizeof(size) );
 	pid = getpid() & 0xffff;
 
-  printf("hostname:%s, ip address:%s\n", hostname, inet_ntoa (go_addr.sin_addr));   
+	printf("hostname:%s, ip address:%s\n", hostname, inet_ntoa (go_addr.sin_addr));   
  
  
-  /******************¶Ç°e¨ã¦³timestamp requestªºicmp«Ê¥]***********/
-  send_timestamp_request();
+	/******************å‚³é€å…·æœ‰timestamp requestçš„icmpå°åŒ…***********/
+	send_timestamp_request();
   
-  
-  /*********************±µ¦¬icmpªº«Ê¥]¨Ã§@³B²z*********************/
+	/*********************æ¥æ”¶icmpçš„å°åŒ…ä¸¦ä½œè™•ç†*********************/
 	rret = recvfrom (icmp_sock,rsendbuf, BUFSIZE,0, (struct sockaddr*)&from, &addrlen);
 	
 	if (rret > 0)
 	{			
-		/*********************­pºâ¦¬¨ì«Ê¥]ªº®É¶¡***********************/
+		/*********************è¨ˆç®—æ”¶åˆ°å°åŒ…çš„æ™‚é–“***********************/
 		gettimeofday (&tval, NULL);			
 		arrive_time = (tval.tv_sec % 86400) * 1000 + tval.tv_usec / 1000;
 		/**************************************************************/
 		
 		
-		/*³B²zicmpªº«Ê¥]*/
+		/*è™•ç†icmpçš„å°åŒ…*/
 		unpack_packet (rsendbuf);
 	}
 
