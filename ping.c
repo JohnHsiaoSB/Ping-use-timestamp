@@ -38,8 +38,6 @@ void usage (void)
 
 }
 
-
-/*送出icmp timestamp request的函式, 並會將相關表頭的資訊設定給icmp封包*/
 void send_timestamp_request()
 {
 	struct timeval tval;
@@ -51,17 +49,17 @@ void send_timestamp_request()
 	
 	icmp_h = (struct icmp*) usendbuf;
 		
-	/************填入icmp相關的封包表頭資訊**************/
 	icmp_h->icmp_type=ICMP_TIMESTAMP;
 	icmp_h->icmp_code=0;
 	icmp_h->icmp_cksum=0;
 	icmp_h->icmp_id =pid;
 	icmp_h->icmp_seq=++nSent;
 	int j=0;	
- 	/*將icmp 封包的長度設為20:表頭8bytes,3個timestamp為12bytes合計20個bytes*/
+ 	/*Set icmp packet size to 20 bytes.
+	 *header:8 bytes+ 3xtimestamp(12bytes)
+	 */
 	icmp_size = 8+12;
 
-	/*計算送出封包的時間並將他傳道original time的欄位裡面*/
 	gettimeofday (&tval, NULL);
 	v = htonl ((tval.tv_sec % 86400) * 1000 + tval.tv_usec / 1000);
 	
@@ -69,23 +67,19 @@ void send_timestamp_request()
 	icmp_h->icmp_rtime=0;
 	icmp_h->icmp_ttime=0;
 	
-	/*計算icmp封包的cksum*/
+	/*compute checksum of icmp packet*/
 	icmp_h->icmp_cksum=in_cksum((u_int16_t*)icmp_h, icmp_size, 0);
 	
 	pp = (u_int16_t*)usendbuf;
 	
-	/*印出icmp 封包timestamp的資訊*/
 	dump_icmp_timestamp_info (*icmp_h);
 	
-	/*送出icmp的封包*/
  	sret = sendto (icmp_sock, usendbuf, BUFSIZE, 0, (struct sockaddr*)&go_addr, sizeof (struct sockaddr_in));
  	if (sret <= 0)
  		fprintf(stderr,"sock send data fail!!\n");
  	//printf("sret:%d\n", sret);
 }
 
-/*********************************計算cksum的函式*******************************************/
-/*******************************************************************************************/
 u_int16_t in_cksum(const u_int16_t *addr, register int len, u_int16_t csum)
 {
 	register int nleft = len;
@@ -120,7 +114,7 @@ void dump_icmp_timestamp_info (struct icmp icmp_p)
 	
 }
 
-/********************************************處理收到的icmp封包*****************************/
+/********************************************Process to receive ICMP packet*****************************/
 
 void unpack_packet (u_char* pbuffer)
 {
@@ -131,10 +125,9 @@ void unpack_packet (u_char* pbuffer)
 	
 	iph = (struct ip*)rsendbuf;
 	
-	/*計算ip header的長度*/
+	/*compute length of ip header*/
 	iphlen = iph->ip_hl << 2;
 	
-	/*取得icmp的內容*/
 	icmp_h = (struct icmp*)(rsendbuf+iphlen);
 	printf("response icmp type:%d\n",icmp_h->icmp_type );
 	switch (icmp_h->icmp_type)
@@ -145,12 +138,11 @@ void unpack_packet (u_char* pbuffer)
 			{
 				printf("------------------------------------------------\n");			
 				
-				/*印出icmp 封包timestamp的資訊*/
 				dump_icmp_timestamp_info (*icmp_h);
 				
 				printf("back time:%lu\n", arrive_time);
 				
-				/*計算rtt所需的時間*/
+				/*compute RTT time*/
 				rtt = (arrive_time - ntohl(icmp_h->icmp_ttime)) + (ntohl(icmp_h->icmp_rtime) - ntohl(icmp_h->icmp_otime));				
 				printf("RTT:%lu\n", rtt);
 				printf("------------------------------------------------\n");
@@ -178,8 +170,7 @@ int main (int argc, char** argv)
  	int addrlen;	
 	struct timeval tval;
 	int size=50*1024;
-	
-	/*將usendbuf,rsendbuf初始資料*/   
+	 
 	memset(usendbuf, 0, sizeof(usendbuf));
 	memset(rsendbuf, 0, sizeof(rsendbuf));
 	
@@ -198,7 +189,6 @@ int main (int argc, char** argv)
 	go_addr.sin_family = AF_INET;
 	addrlen = sizeof(from);
 	
-	/****************對domain name作處理處理且取得相對應的ip位置****************/
 	if (inet_aton (target, &go_addr.sin_addr) == 1)
 	{
 		hostname = target;
@@ -206,7 +196,6 @@ int main (int argc, char** argv)
 	}
 	else
 	{
-		/*使用gethostbyname函式取得domain name相對應的ip address*/
 		hp = gethostbyname2(target, AF_INET);
 		if (!hp)
 		{
@@ -218,7 +207,7 @@ int main (int argc, char** argv)
 								
 		hostname = strdup (hp->h_name);									
 		
-		/*將ip address複製進go_addr.sin_addr的資料結構裡*/
+
 		memcpy (&go_addr.sin_addr, hp->h_addr, 4);						
 	}
 	/*******************************************************************/	
@@ -235,22 +224,16 @@ int main (int argc, char** argv)
 
 	printf("hostname:%s, ip address:%s\n", hostname, inet_ntoa (go_addr.sin_addr));   
  
- 
-	/******************傳送具有timestamp request的icmp封包***********/
 	send_timestamp_request();
   
-	/*********************接收icmp的封包並作處理*********************/
 	rret = recvfrom (icmp_sock,rsendbuf, BUFSIZE,0, (struct sockaddr*)&from, &addrlen);
 	
 	if (rret > 0)
 	{			
-		/*********************計算收到封包的時間***********************/
+		/*********************compute received time of ICMP packet***********************/
 		gettimeofday (&tval, NULL);			
 		arrive_time = (tval.tv_sec % 86400) * 1000 + tval.tv_usec / 1000;
-		/**************************************************************/
 		
-		
-		/*處理icmp的封包*/
 		unpack_packet (rsendbuf);
 	}
 
